@@ -1,0 +1,11 @@
+models/
+qwen2.5-3b-dpo-output/
+checkpoint-*/
+*.safetensors
+*.bin
+*.pt
+.venv/
+__pycache__/
+wandb/
+.cache/
+.DS_Store
