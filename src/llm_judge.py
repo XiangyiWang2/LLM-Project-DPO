@@ -23,8 +23,7 @@ TEST_PROMPTS = [
 
 
 def generate_responses(model_path, prompts):
-    """加载模型，生成回答，然后彻底卸载释放显存"""
-    print(f"\n[🔄] 正在加载选手模型: {model_path} ...")
+    print(f"Downloading: {model_path} ...")
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     model = AutoModelForCausalLM.from_pretrained(
         model_path, torch_dtype=torch.bfloat16, device_map="auto"
@@ -41,7 +40,7 @@ def generate_responses(model_path, prompts):
         outputs = model.generate(**inputs, max_new_tokens=512, temperature=0.7)
         response_text = tokenizer.decode(outputs[0][inputs.input_ids.shape[1]:], skip_special_tokens=True)
         responses.append(response_text)
-        print(f"  - 完成生成 {i+1}/{len(prompts)}")
+        print(f"  - finish {i+1}/{len(prompts)}")
         
     del model
     del tokenizer
@@ -50,8 +49,7 @@ def generate_responses(model_path, prompts):
     return responses
 
 def judge_responses(judge_model_path, prompts, base_resps, dpo_resps):
-    """加载裁判模型，进行盲测打分"""
-    print(f"\n[⚖️] 正在加载裁判模型 (Judge): {judge_model_path} ...")
+    print(f"Downloading the judge: {judge_model_path} ...")
     tokenizer = AutoTokenizer.from_pretrained(judge_model_path)
     model = AutoModelForCausalLM.from_pretrained(
         judge_model_path, torch_dtype=torch.bfloat16, device_map="auto"
@@ -93,9 +91,8 @@ Conclusion: A wins / B wins / Tie
         outputs = model.generate(**inputs, max_new_tokens=100, temperature=0.1)
         judgment = tokenizer.decode(outputs[0][inputs.input_ids.shape[1]:], skip_special_tokens=True)
         
-        print(f"\n题目 {i+1} 裁判结果: {judgment}")
+        print(f"\nQuestion {i+1} Result: {judgment}")
         
-        # 匹配英文裁判结果
         if "B wins" in judgment:
             results["DPO_Win"] += 1
         elif "A wins" in judgment:
@@ -116,14 +113,14 @@ def main():
     
     total = len(TEST_PROMPTS)
     print("\n" + "="*40)
-    print("🏆 LLM-as-a-Judge 盲测最终结果 (English In-Domain) 🏆")
-    print(f"评测集大小: {total} 条指令")
-    print(f"基座模型 (Base) 胜率: {results['Base_Win']/total*100:.1f}%")
-    print(f"DPO模型 (Merged) 胜率: {results['DPO_Win']/total*100:.1f}%")
-    print(f"平局率 (Tie): {results['Tie']/total*100:.1f}%")
+    print(" LLM-as-a-Judge Result ")
+    print(f"Dataset: {total} piece of instruction")
+    print(f"Base: {results['Base_Win']/total*100:.1f}%")
+    print(f"DPO: {results['DPO_Win']/total*100:.1f}%")
+    print(f"Tie: {results['Tie']/total*100:.1f}%")
     print("="*40)
 
-    # 画图部分
+
     labels = ['Base Win', 'Tie', 'DPO Win']
     counts = [results['Base_Win'], results['Tie'], results['DPO_Win']]
     colors = ['#7b9ce6', '#d3d3d3', '#f4a261'] 
@@ -145,7 +142,7 @@ def main():
     plot_path = os.path.join(output_dir, "english_win_rate_chart.png")
     
     plt.savefig(plot_path, dpi=300, bbox_inches='tight')
-    print(f"\n📊 英文评测可视化图表已自动生成并保存至: {plot_path}")
+    print(f"Result is saved to: {plot_path}")
 
 if __name__ == "__main__":
     main()
